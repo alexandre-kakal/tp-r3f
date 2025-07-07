@@ -47,7 +47,13 @@ export function Rick(props: JSX.IntrinsicElements["group"]) {
   }, [actions]);
 
   return (
-    <group ref={group} {...props} dispose={null} rotation={[0, Math.PI / 2, 0]}>
+    <group
+      ref={group}
+      {...props}
+      dispose={null}
+      rotation={[0, Math.PI / 2, 0]}
+      position={[0, 0.24, 0]}
+    >
       <group name="Scene">
         <group name="Armature" rotation={[Math.PI / 2, 0, 0]} scale={0.01}>
           <group name="Rick">
