@@ -10,21 +10,23 @@ import { Rick, type RickRef } from "./components/Rick";
 import { useAudio } from "./hooks/useAudio";
 import Menu from "./menus/Menu";
 import Options from "./menus/Options";
+import { Physics } from "@react-three/rapier";
+import { Environment } from "@react-three/drei";
 
 type GameState = "menu" | "playing" | "options";
 
 interface GameSettings {
-  jumpKey: string;
-  leftKey: string;
-  rightKey: string;
-  volume: number;
+    jumpKey: string;
+    leftKey: string;
+    rightKey: string;
+    volume: number;
 }
 
 const defaultSettings: GameSettings = {
-  jumpKey: "KeyZ",
-  leftKey: "KeyQ",
-  rightKey: "KeyD",
-  volume: 50,
+    jumpKey: "KeyZ",
+    leftKey: "KeyQ",
+    rightKey: "KeyD",
+    volume: 50,
 };
 
 function App() {
@@ -114,8 +116,6 @@ function App() {
       KeyZ: "Z",
       KeyQ: "Q",
     };
-    return keyMap[keyCode] || keyCode.replace("Key", "");
-  };
 
   const handlePlay = async () => {
     setGameState("playing");
@@ -130,20 +130,19 @@ function App() {
     }
   };
 
-  const handleOptions = () => {
-    setGameState("options");
-  };
+    const handleOptions = () => {
+        setGameState("options");
+    };
 
-  const handleBackToMenu = () => {
-    setGameState("menu");
-  };
+    const handleBackToMenu = () => {
+        setGameState("menu");
+    };
 
-  return (
-    <>
-      {/* Interface de jeu avec React Three Fiber */}
-      {gameState === "playing" && (
+    return (
         <>
           <Canvas camera={{ position: [10, 7, 18], fov: 60 }} shadows>
+                                  <Environment background files="/bi.jpg" />
+
             <ambientLight intensity={0.6} />
             <directionalLight
               position={[10, 10, 5]}
@@ -281,17 +280,7 @@ function App() {
             </div>
           )}
         </>
-      )}
-
-      {/* Menu principal */}
-      {gameState === "menu" && (
-        <Menu onPlay={handlePlay} onOptions={handleOptions} />
-      )}
-
-      {/* Menu options */}
-      {gameState === "options" && <Options onBack={handleBackToMenu} />}
-    </>
-  );
+    );
 }
 
 export default App;
