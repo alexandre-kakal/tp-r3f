@@ -1,3 +1,4 @@
+// import { OrbitControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
@@ -7,7 +8,6 @@ import Map from "./components/Map";
 import { Rick, type RickRef } from "./components/Rick";
 import Menu from "./menus/Menu";
 import Options from "./menus/Options";
-import { Rick } from "./components/Rick";
 import { Physics } from "@react-three/rapier";
 
 type GameState = "menu" | "playing" | "options";
@@ -60,7 +60,7 @@ function App() {
         }
         requestAnimationFrame(updateCameraTarget);
       };
-      
+
       updateCameraTarget();
     }
   }, [gameState]);
@@ -102,18 +102,21 @@ function App() {
         <>
           <Canvas camera={{ position: [10, 7, 18], fov: 60 }} shadows>
             <ambientLight intensity={0.6} />
-            <directionalLight 
-              position={[10, 10, 5]} 
-              intensity={1} 
-              castShadow 
+            <directionalLight
+              position={[10, 10, 5]}
+              intensity={1}
+              castShadow
               shadow-mapSize-width={2048}
               shadow-mapSize-height={2048}
             />
-            <Map />
-            <Rick ref={rickRef} />
+            <Physics>
+              <Map />
+              <Rick ref={rickRef} />
+            </Physics>
             <CameraController target={cameraTarget} />
             {/* OrbitControls désactivé pour laisser le contrôle à CameraController */}
-            {/* <OrbitControls enableZoom={false} enableRotate={false} /> */}
+            {/* <OrbitControls /> */}
+          </Canvas>
 
           {/* Bouton pause/menu en jeu */}
           <button
@@ -182,7 +185,8 @@ function App() {
               zIndex: 100,
             }}
           >
-            Rick: ({cameraTarget.x.toFixed(1)}, {cameraTarget.y.toFixed(1)}, {cameraTarget.z.toFixed(1)})
+            Rick: ({cameraTarget.x.toFixed(1)}, {cameraTarget.y.toFixed(1)},{" "}
+            {cameraTarget.z.toFixed(1)})
           </div>
         </>
       )}
