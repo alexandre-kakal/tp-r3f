@@ -1,7 +1,13 @@
 import { useAnimations, useGLTF } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import type { JSX } from "react";
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
 import * as THREE from "three";
 import type { GLTF } from "three-stdlib";
 import { usePlayerControls } from "../hooks/usePlayerControls";
@@ -35,201 +41,205 @@ type GLTFResult = GLTF & {
 type ActionName = "idle" | "jumping" | "runtrue";
 type TypedActions = Partial<Record<ActionName, THREE.AnimationAction>>;
 
-interface PlayerState {
-  isGrounded: boolean;
-  velocity: { x: number; y: number };
-  position: { x: number; y: number; z: number };
-}
-
 export interface RickRef {
   getPosition: () => THREE.Vector3;
 }
 
-export const Rick = forwardRef<RickRef, JSX.IntrinsicElements["group"]>((props, ref) => {
-  const group = useRef<THREE.Group>(null);
-  const { nodes, materials, animations } = useGLTF(
-    "/models/rick.glb"
-  ) as unknown as GLTFResult;
-  const { actions: rawActions } = useAnimations(animations, group);
-  const controls = usePlayerControls();
+export const Rick = forwardRef<RickRef, JSX.IntrinsicElements["group"]>(
+  (props, ref) => {
+    const group = useRef<THREE.Group>(null);
+    const { nodes, materials, animations } = useGLTF(
+      "/models/rick.glb"
+    ) as unknown as GLTFResult;
+    const { actions: rawActions } = useAnimations(animations, group);
+    const controls = usePlayerControls();
 
-  const actions = rawActions as TypedActions;
-  const [currentAction, setCurrentAction] = useState<ActionName>("idle");
-  const [playerState, setPlayerState] = useState<PlayerState>({
-    isGrounded: true,
-    velocity: { x: 0, y: 0 },
-    position: { x: 0, y: 0.24, z: 0 },
-  });
+    const actions = rawActions as TypedActions;
+    const [currentAction, setCurrentAction] = useState<ActionName>("idle");
 
-  // Constantes de gameplay
-  const MOVE_SPEED = 5;
-  const JUMP_FORCE = 10;
-  const GRAVITY = -20;
-  const GROUND_Y = 0.24;
+    // Utilisation de refs pour la position, la vélocité et l'état au sol
+    const positionRef = useRef<{ x: number; y: number; z: number }>({
+      x: 0,
+      y: 0.24,
+      z: 0,
+    });
+    const velocityRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+    const isGroundedRef = useRef<boolean>(true);
 
-  // Exposer la position à la caméra
-  useImperativeHandle(ref, () => ({
-    getPosition: () => new THREE.Vector3(
-      playerState.position.x,
-      playerState.position.y,
-      playerState.position.z
-    ),
-  }));
+    // Constantes de gameplay
+    const MOVE_SPEED = 5;
+    const JUMP_FORCE = 10;
+    const GRAVITY = -20;
+    const GROUND_Y = 0.24;
 
-  // Gestion des animations
-  useEffect(() => {
-    // Arrêter toutes les animations
-    Object.values(actions).forEach((action) => action?.stop());
-    
-    // Jouer l'animation actuelle
-    if (actions[currentAction]) {
-      actions[currentAction]?.reset().fadeIn(0.2).play();
-    }
-  }, [currentAction, actions]);
+    // Exposer la position à la caméra
+    useImperativeHandle(
+      ref,
+      () => ({
+        getPosition: () =>
+          new THREE.Vector3(
+            positionRef.current.x,
+            positionRef.current.y,
+            positionRef.current.z
+          ),
+      }),
+      []
+    );
 
-  // Logique de gameplay
-  useFrame((state, delta) => {
-    if (!group.current) return;
+    // Gestion des animations
+    useEffect(() => {
+      // Arrêter toutes les animations
+      Object.values(actions).forEach((action) => action?.stop());
+      // Jouer l'animation actuelle
+      if (actions[currentAction]) {
+        actions[currentAction]?.reset().fadeIn(0.2).play();
+      }
+    }, [currentAction, actions]);
 
-    setPlayerState((prev) => {
-      const newState = { ...prev };
-      
+    // Logique de gameplay optimisée
+    useFrame((state, delta) => {
+      if (!group.current) return;
+
       // Mouvement horizontal
-      newState.velocity.x = 0;
+      velocityRef.current.x = 0;
       if (controls.moveLeft) {
-        newState.velocity.x -= MOVE_SPEED;
+        velocityRef.current.x -= MOVE_SPEED;
       }
       if (controls.moveRight) {
-        newState.velocity.x += MOVE_SPEED;
+        velocityRef.current.x += MOVE_SPEED;
       }
 
       // Saut (empêcher le saut multiple)
-      if (controls.jump && newState.isGrounded) {
-        newState.velocity.y = JUMP_FORCE;
-        newState.isGrounded = false;
+      if (controls.jump && isGroundedRef.current) {
+        velocityRef.current.y = JUMP_FORCE;
+        isGroundedRef.current = false;
       }
 
       // Gravité
-      if (!newState.isGrounded) {
-        newState.velocity.y += GRAVITY * delta;
+      if (!isGroundedRef.current) {
+        velocityRef.current.y += GRAVITY * delta;
       }
 
       // Mise à jour de la position
-      newState.position.x += newState.velocity.x * delta;
-      newState.position.y += newState.velocity.y * delta;
+      positionRef.current.x += velocityRef.current.x * delta;
+      positionRef.current.y += velocityRef.current.y * delta;
 
       // Collision avec le sol (basique pour le moment)
-      if (newState.position.y <= GROUND_Y) {
-        newState.position.y = GROUND_Y;
-        newState.velocity.y = 0;
-        newState.isGrounded = true;
+      if (positionRef.current.y <= GROUND_Y) {
+        positionRef.current.y = GROUND_Y;
+        velocityRef.current.y = 0;
+        isGroundedRef.current = true;
       }
 
       // Limitation des bordures de la map
-      newState.position.x = Math.max(-10, Math.min(150, newState.position.x));
+      positionRef.current.x = Math.max(
+        -10,
+        Math.min(150, positionRef.current.x)
+      );
 
-      return newState;
+      // Mise à jour de la position du modèle
+      group.current.position.set(
+        positionRef.current.x,
+        positionRef.current.y,
+        positionRef.current.z
+      );
+
+      // Orientation du personnage selon la direction
+      if (controls.moveLeft) {
+        group.current.rotation.y = -Math.PI / 2;
+      } else if (controls.moveRight) {
+        group.current.rotation.y = Math.PI / 2;
+      }
+
+      // Gestion des animations basée sur l'état
+      let newAction: ActionName = "idle";
+      if (!isGroundedRef.current) {
+        newAction = "jumping";
+      } else if (controls.moveLeft || controls.moveRight) {
+        newAction = "runtrue";
+      }
+      if (newAction !== currentAction) {
+        setCurrentAction(newAction);
+      }
     });
 
-    // Mise à jour de la position du modèle
-    group.current.position.set(
-      playerState.position.x,
-      playerState.position.y,
-      playerState.position.z
-    );
-
-    // Orientation du personnage selon la direction (CORRIGÉ)
-    if (controls.moveLeft) {
-      group.current.rotation.y = -Math.PI / 2; // Regarder vers la gauche (inversé)
-    } else if (controls.moveRight) {
-      group.current.rotation.y = Math.PI / 2; // Regarder vers la droite (inversé)
-    }
-
-    // Gestion des animations basée sur l'état
-    let newAction: ActionName = "idle";
-    
-    if (!playerState.isGrounded) {
-      newAction = "jumping";
-    } else if (controls.moveLeft || controls.moveRight) {
-      newAction = "runtrue";
-    }
-
-    if (newAction !== currentAction) {
-      setCurrentAction(newAction);
-    }
-  });
-
-  return (
-    <group
-      ref={group}
-      {...props}
-      dispose={null}
-      position={[playerState.position.x, playerState.position.y, playerState.position.z]}
-    >
-      <group name="Scene">
-        <group name="Armature" rotation={[Math.PI / 2, 0, 0]} scale={0.01}>
-          <group name="Rick">
-            <skinnedMesh
-              name="Sphere002"
-              geometry={nodes.Sphere002.geometry}
-              material={materials["Shoes and Eyes"]}
-              skeleton={nodes.Sphere002.skeleton}
-            />
-            <skinnedMesh
-              name="Sphere002_1"
-              geometry={nodes.Sphere002_1.geometry}
-              material={materials["Skin.001"]}
-              skeleton={nodes.Sphere002_1.skeleton}
-            />
-            <skinnedMesh
-              name="Sphere002_2"
-              geometry={nodes.Sphere002_2.geometry}
-              material={materials["Hair.001"]}
-              skeleton={nodes.Sphere002_2.skeleton}
-            />
-            <skinnedMesh
-              name="Sphere002_3"
-              geometry={nodes.Sphere002_3.geometry}
-              material={materials["White.001"]}
-              skeleton={nodes.Sphere002_3.skeleton}
-            />
-            <skinnedMesh
-              name="Sphere002_4"
-              geometry={nodes.Sphere002_4.geometry}
-              material={materials["Shirt.001"]}
-              skeleton={nodes.Sphere002_4.skeleton}
-            />
-            <skinnedMesh
-              name="Sphere002_5"
-              geometry={nodes.Sphere002_5.geometry}
-              material={materials["Belt.001"]}
-              skeleton={nodes.Sphere002_5.skeleton}
-            />
-            <skinnedMesh
-              name="Sphere002_6"
-              geometry={nodes.Sphere002_6.geometry}
-              material={materials["Buckle.001"]}
-              skeleton={nodes.Sphere002_6.skeleton}
-            />
-            <skinnedMesh
-              name="Sphere002_7"
-              geometry={nodes.Sphere002_7.geometry}
-              material={materials["Trousers.001"]}
-              skeleton={nodes.Sphere002_7.skeleton}
-            />
-            <skinnedMesh
-              name="Sphere002_8"
-              geometry={nodes.Sphere002_8.geometry}
-              material={materials["Socks.001"]}
-              skeleton={nodes.Sphere002_8.skeleton}
-            />
+    return (
+      <group
+        ref={group}
+        {...props}
+        dispose={null}
+        // On ne passe plus la position via le state, mais la ref
+        position={[
+          positionRef.current.x,
+          positionRef.current.y,
+          positionRef.current.z,
+        ]}
+      >
+        <group name="Scene">
+          <group name="Armature" rotation={[Math.PI / 2, 0, 0]} scale={0.01}>
+            <group name="Rick">
+              <skinnedMesh
+                name="Sphere002"
+                geometry={nodes.Sphere002.geometry}
+                material={materials["Shoes and Eyes"]}
+                skeleton={nodes.Sphere002.skeleton}
+              />
+              <skinnedMesh
+                name="Sphere002_1"
+                geometry={nodes.Sphere002_1.geometry}
+                material={materials["Skin.001"]}
+                skeleton={nodes.Sphere002_1.skeleton}
+              />
+              <skinnedMesh
+                name="Sphere002_2"
+                geometry={nodes.Sphere002_2.geometry}
+                material={materials["Hair.001"]}
+                skeleton={nodes.Sphere002_2.skeleton}
+              />
+              <skinnedMesh
+                name="Sphere002_3"
+                geometry={nodes.Sphere002_3.geometry}
+                material={materials["White.001"]}
+                skeleton={nodes.Sphere002_3.skeleton}
+              />
+              <skinnedMesh
+                name="Sphere002_4"
+                geometry={nodes.Sphere002_4.geometry}
+                material={materials["Shirt.001"]}
+                skeleton={nodes.Sphere002_4.skeleton}
+              />
+              <skinnedMesh
+                name="Sphere002_5"
+                geometry={nodes.Sphere002_5.geometry}
+                material={materials["Belt.001"]}
+                skeleton={nodes.Sphere002_5.skeleton}
+              />
+              <skinnedMesh
+                name="Sphere002_6"
+                geometry={nodes.Sphere002_6.geometry}
+                material={materials["Buckle.001"]}
+                skeleton={nodes.Sphere002_6.skeleton}
+              />
+              <skinnedMesh
+                name="Sphere002_7"
+                geometry={nodes.Sphere002_7.geometry}
+                material={materials["Trousers.001"]}
+                skeleton={nodes.Sphere002_7.skeleton}
+              />
+              <skinnedMesh
+                name="Sphere002_8"
+                geometry={nodes.Sphere002_8.geometry}
+                material={materials["Socks.001"]}
+                skeleton={nodes.Sphere002_8.skeleton}
+              />
+            </group>
+            <primitive object={nodes.mixamorigHips} />
           </group>
-          <primitive object={nodes.mixamorigHips} />
         </group>
       </group>
-    </group>
-  );
-});
+    );
+  }
+);
 
 Rick.displayName = "Rick";
 

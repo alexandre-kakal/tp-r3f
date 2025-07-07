@@ -1,5 +1,6 @@
-import { useMemo } from "react";
+import { useMemo, useRef, useEffect } from "react";
 import { RigidBody } from "@react-three/rapier";
+import * as THREE from "three";
 
 // Paramètres de la map
 const MAP_LENGTH = 120; // nombre de cases
@@ -47,32 +48,78 @@ function generateMap() {
   return map;
 }
 
-function Platform({ x, y, type }: { x: number; y: number; type: string }) {
-  if (type === "hole") return null;
-  const color = type === "jumppad" ? "orange" : "gray";
-  // Calcul précis pour la colonne
-  const colonneTop = y - PLATFORM_HEIGHT / 2;
-  const colonneBottom = GROUND_Y;
-  const colonneHeight = colonneTop - colonneBottom;
-  const colonneY = colonneBottom + colonneHeight / 2;
+function Map() {
+  const map = useMemo(() => generateMap(), []);
+  const normalCount = map.filter((tile) => tile.type === "normal").length;
+  const jumpPadCount = map.filter((tile) => tile.type === "jumppad").length;
+
+  // InstancedMesh refs
+  const normalRef = useRef<THREE.InstancedMesh>(null);
+  const jumpPadRef = useRef<THREE.InstancedMesh>(null);
+
+  useEffect(() => {
+    let normalIdx = 0;
+    let jumpPadIdx = 0;
+    map.forEach((tile) => {
+      if (tile.type === "hole") return;
+      // Plateforme
+      const matrix = new THREE.Matrix4().makeTranslation(tile.x, tile.y, 0);
+      if (tile.type === "normal" && normalRef.current) {
+        normalRef.current.setMatrixAt(normalIdx++, matrix);
+      } else if (tile.type === "jumppad" && jumpPadRef.current) {
+        jumpPadRef.current.setMatrixAt(jumpPadIdx++, matrix);
+      }
+    });
+    if (normalRef.current) normalRef.current.instanceMatrix.needsUpdate = true;
+    if (jumpPadRef.current)
+      jumpPadRef.current.instanceMatrix.needsUpdate = true;
+  }, [map]);
+
   return (
     <>
-      {/* Plateforme */}
+      <Ground />
+      {/* Plateformes normales */}
       <RigidBody type="fixed" colliders="cuboid">
-        <mesh position={[x, y, 0]}>
+        <instancedMesh
+          ref={normalRef}
+          args={[undefined, undefined, normalCount]}
+        >
           <boxGeometry
             args={[PLATFORM_WIDTH, PLATFORM_HEIGHT, PLATFORM_DEPTH]}
           />
-          <meshStandardMaterial color={color} />
-        </mesh>
+          <meshStandardMaterial color="gray" />
+        </instancedMesh>
       </RigidBody>
-      {/* Colonne de soutien (mêmes dimensions que la plateforme, bien alignée) */}
+      {/* Jump pads */}
       <RigidBody type="fixed" colliders="cuboid">
-        <mesh position={[x, colonneY, 0]}>
-          <boxGeometry args={[PLATFORM_WIDTH, colonneHeight, PLATFORM_DEPTH]} />
-          <meshStandardMaterial color={"#888"} />
-        </mesh>
+        <instancedMesh
+          ref={jumpPadRef}
+          args={[undefined, undefined, jumpPadCount]}
+        >
+          <boxGeometry
+            args={[PLATFORM_WIDTH, PLATFORM_HEIGHT, PLATFORM_DEPTH]}
+          />
+          <meshStandardMaterial color="orange" />
+        </instancedMesh>
       </RigidBody>
+      {/* Colonnes individuelles pour chaque plateforme (hauteur variable) */}
+      {map.map((tile, i) => {
+        if (tile.type === "hole") return null;
+        const colonneTop = tile.y - PLATFORM_HEIGHT / 2;
+        const colonneBottom = GROUND_Y;
+        const colonneHeight = colonneTop - colonneBottom;
+        const colonneY = colonneBottom + colonneHeight / 2;
+        return (
+          <RigidBody type="fixed" colliders="cuboid" key={i}>
+            <mesh position={[tile.x, colonneY, 0]}>
+              <boxGeometry
+                args={[PLATFORM_WIDTH, colonneHeight, PLATFORM_DEPTH]}
+              />
+              <meshStandardMaterial color="#888" />
+            </mesh>
+          </RigidBody>
+        );
+      })}
     </>
   );
 }
@@ -88,18 +135,6 @@ function Ground() {
         <meshStandardMaterial color="#444" />
       </mesh>
     </RigidBody>
-  );
-}
-
-function Map() {
-  const map = useMemo(() => generateMap(), []);
-  return (
-    <>
-      <Ground />
-      {map.map((tile: { x: number; y: number; type: string }, i: number) => (
-        <Platform key={i} x={tile.x} y={tile.y} type={tile.type} />
-      ))}
-    </>
   );
 }
 
