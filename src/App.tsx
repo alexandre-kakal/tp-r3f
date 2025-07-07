@@ -1,8 +1,10 @@
-import { OrbitControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import * as THREE from "three";
 import "./App.css";
+import { CameraController } from "./components/CameraController";
 import Map from "./components/Map";
+import { Rick, type RickRef } from "./components/Rick";
 import Menu from "./menus/Menu";
 import Options from "./menus/Options";
 
@@ -21,11 +23,12 @@ const defaultSettings: GameSettings = {
   rightKey: "KeyD",
   volume: 50,
 };
-import { Rick } from "./components/Rick";
 
 function App() {
   const [gameState, setGameState] = useState<GameState>("menu");
   const [settings, setSettings] = useState<GameSettings>(defaultSettings);
+  const rickRef = useRef<RickRef>(null);
+  const [cameraTarget, setCameraTarget] = useState(new THREE.Vector3(0, 0, 0));
 
   // Charger les paramètres depuis localStorage
   useEffect(() => {
@@ -42,6 +45,21 @@ function App() {
       if (savedSettings) {
         setSettings(JSON.parse(savedSettings));
       }
+    }
+  }, [gameState]);
+
+  // Mettre à jour la position de la caméra en temps réel
+  useEffect(() => {
+    if (gameState === "playing") {
+      const updateCameraTarget = () => {
+        if (rickRef.current) {
+          const position = rickRef.current.getPosition();
+          setCameraTarget(position);
+        }
+        requestAnimationFrame(updateCameraTarget);
+      };
+      
+      updateCameraTarget();
     }
   }, [gameState]);
 
@@ -80,12 +98,20 @@ function App() {
       {/* Interface de jeu avec React Three Fiber */}
       {gameState === "playing" && (
         <>
-          <Canvas camera={{ position: [10, 7, 18], fov: 50 }} shadows>
-            <ambientLight intensity={0.5} />
-            <directionalLight position={[10, 10, 5]} intensity={1} castShadow />
+          <Canvas camera={{ position: [10, 7, 18], fov: 60 }} shadows>
+            <ambientLight intensity={0.6} />
+            <directionalLight 
+              position={[10, 10, 5]} 
+              intensity={1} 
+              castShadow 
+              shadow-mapSize-width={2048}
+              shadow-mapSize-height={2048}
+            />
             <Map />
-            <Rick />
-            <OrbitControls />
+            <Rick ref={rickRef} />
+            <CameraController target={cameraTarget} />
+            {/* OrbitControls désactivé pour laisser le contrôle à CameraController */}
+            {/* <OrbitControls enableZoom={false} enableRotate={false} /> */}
           </Canvas>
 
           {/* Bouton pause/menu en jeu */}
@@ -139,6 +165,23 @@ function App() {
               • {formatKeyName(settings.jumpKey)} : Sauter
             </p>
             <p style={{ margin: "0" }}>• Plateformes orange : Super saut !</p>
+          </div>
+
+          {/* Indicateur de position pour debug (optionnel) */}
+          <div
+            style={{
+              position: "absolute",
+              top: "20px",
+              right: "20px",
+              color: "#fff",
+              background: "rgba(0,0,0,0.5)",
+              padding: "0.5rem",
+              borderRadius: "5px",
+              fontSize: "0.8rem",
+              zIndex: 100,
+            }}
+          >
+            Rick: ({cameraTarget.x.toFixed(1)}, {cameraTarget.y.toFixed(1)}, {cameraTarget.z.toFixed(1)})
           </div>
         </>
       )}

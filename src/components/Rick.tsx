@@ -1,8 +1,10 @@
-import * as THREE from "three";
-import { useRef, useEffect } from "react";
-import { useGLTF, useAnimations } from "@react-three/drei";
-import type { GLTF } from "three-stdlib";
+import { useAnimations, useGLTF } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
 import type { JSX } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import * as THREE from "three";
+import type { GLTF } from "three-stdlib";
+import { usePlayerControls } from "../hooks/usePlayerControls";
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -30,29 +32,139 @@ type GLTFResult = GLTF & {
   };
 };
 
-type ActionName = "idle" | "jumping" | "run";
+type ActionName = "idle" | "jumping" | "runtrue";
 type TypedActions = Partial<Record<ActionName, THREE.AnimationAction>>;
 
-export function Rick(props: JSX.IntrinsicElements["group"]) {
+interface PlayerState {
+  isGrounded: boolean;
+  velocity: { x: number; y: number };
+  position: { x: number; y: number; z: number };
+}
+
+export interface RickRef {
+  getPosition: () => THREE.Vector3;
+}
+
+export const Rick = forwardRef<RickRef, JSX.IntrinsicElements["group"]>((props, ref) => {
   const group = useRef<THREE.Group>(null);
   const { nodes, materials, animations } = useGLTF(
     "/models/rick.glb"
   ) as unknown as GLTFResult;
   const { actions: rawActions } = useAnimations(animations, group);
+  const controls = usePlayerControls();
 
   const actions = rawActions as TypedActions;
+  const [currentAction, setCurrentAction] = useState<ActionName>("idle");
+  const [playerState, setPlayerState] = useState<PlayerState>({
+    isGrounded: true,
+    velocity: { x: 0, y: 0 },
+    position: { x: 0, y: 0.24, z: 0 },
+  });
 
+  // Constantes de gameplay
+  const MOVE_SPEED = 5;
+  const JUMP_FORCE = 10;
+  const GRAVITY = -20;
+  const GROUND_Y = 0.24;
+
+  // Exposer la position à la caméra
+  useImperativeHandle(ref, () => ({
+    getPosition: () => new THREE.Vector3(
+      playerState.position.x,
+      playerState.position.y,
+      playerState.position.z
+    ),
+  }));
+
+  // Gestion des animations
   useEffect(() => {
-    actions["idle"]?.play();
-  }, [actions]);
+    // Arrêter toutes les animations
+    Object.values(actions).forEach((action) => action?.stop());
+    
+    // Jouer l'animation actuelle
+    if (actions[currentAction]) {
+      actions[currentAction]?.reset().fadeIn(0.2).play();
+    }
+  }, [currentAction, actions]);
+
+  // Logique de gameplay
+  useFrame((state, delta) => {
+    if (!group.current) return;
+
+    setPlayerState((prev) => {
+      const newState = { ...prev };
+      
+      // Mouvement horizontal
+      newState.velocity.x = 0;
+      if (controls.moveLeft) {
+        newState.velocity.x -= MOVE_SPEED;
+      }
+      if (controls.moveRight) {
+        newState.velocity.x += MOVE_SPEED;
+      }
+
+      // Saut (empêcher le saut multiple)
+      if (controls.jump && newState.isGrounded) {
+        newState.velocity.y = JUMP_FORCE;
+        newState.isGrounded = false;
+      }
+
+      // Gravité
+      if (!newState.isGrounded) {
+        newState.velocity.y += GRAVITY * delta;
+      }
+
+      // Mise à jour de la position
+      newState.position.x += newState.velocity.x * delta;
+      newState.position.y += newState.velocity.y * delta;
+
+      // Collision avec le sol (basique pour le moment)
+      if (newState.position.y <= GROUND_Y) {
+        newState.position.y = GROUND_Y;
+        newState.velocity.y = 0;
+        newState.isGrounded = true;
+      }
+
+      // Limitation des bordures de la map
+      newState.position.x = Math.max(-10, Math.min(150, newState.position.x));
+
+      return newState;
+    });
+
+    // Mise à jour de la position du modèle
+    group.current.position.set(
+      playerState.position.x,
+      playerState.position.y,
+      playerState.position.z
+    );
+
+    // Orientation du personnage selon la direction (CORRIGÉ)
+    if (controls.moveLeft) {
+      group.current.rotation.y = -Math.PI / 2; // Regarder vers la gauche (inversé)
+    } else if (controls.moveRight) {
+      group.current.rotation.y = Math.PI / 2; // Regarder vers la droite (inversé)
+    }
+
+    // Gestion des animations basée sur l'état
+    let newAction: ActionName = "idle";
+    
+    if (!playerState.isGrounded) {
+      newAction = "jumping";
+    } else if (controls.moveLeft || controls.moveRight) {
+      newAction = "runtrue";
+    }
+
+    if (newAction !== currentAction) {
+      setCurrentAction(newAction);
+    }
+  });
 
   return (
     <group
       ref={group}
       {...props}
       dispose={null}
-      rotation={[0, Math.PI / 2, 0]}
-      position={[0, 0.24, 0]}
+      position={[playerState.position.x, playerState.position.y, playerState.position.z]}
     >
       <group name="Scene">
         <group name="Armature" rotation={[Math.PI / 2, 0, 0]} scale={0.01}>
@@ -117,6 +229,8 @@ export function Rick(props: JSX.IntrinsicElements["group"]) {
       </group>
     </group>
   );
-}
+});
+
+Rick.displayName = "Rick";
 
 useGLTF.preload("/models/rick.glb");
