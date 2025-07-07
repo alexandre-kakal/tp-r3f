@@ -4,6 +4,7 @@ import type { JSX } from "react";
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import * as THREE from "three";
 import type { GLTF } from "three-stdlib";
+import { useAudio } from "../hooks/useAudio";
 import { usePlayerControls } from "../hooks/usePlayerControls";
 
 type GLTFResult = GLTF & {
@@ -52,6 +53,7 @@ export const Rick = forwardRef<RickRef, JSX.IntrinsicElements["group"]>((props, 
   ) as unknown as GLTFResult;
   const { actions: rawActions } = useAnimations(animations, group);
   const controls = usePlayerControls();
+  const { playJumpSound } = useAudio();
 
   const actions = rawActions as TypedActions;
   const [currentAction, setCurrentAction] = useState<ActionName>("idle");
@@ -60,6 +62,9 @@ export const Rick = forwardRef<RickRef, JSX.IntrinsicElements["group"]>((props, 
     velocity: { x: 0, y: 0 },
     position: { x: 0, y: 0.24, z: 0 },
   });
+
+  // Variables pour éviter de rejouer le son de saut en continu
+  const [justJumped, setJustJumped] = useState(false);
 
   // Constantes de gameplay
   const MOVE_SPEED = 5;
@@ -103,10 +108,17 @@ export const Rick = forwardRef<RickRef, JSX.IntrinsicElements["group"]>((props, 
         newState.velocity.x += MOVE_SPEED;
       }
 
-      // Saut (empêcher le saut multiple)
-      if (controls.jump && newState.isGrounded) {
+      // Saut avec son (système audio amélioré)
+      if (controls.jump && newState.isGrounded && !justJumped) {
         newState.velocity.y = JUMP_FORCE;
         newState.isGrounded = false;
+        playJumpSound(); // 🎵 Jouer l'effet sonore de saut !
+        setJustJumped(true);
+      }
+
+      // Reset du flag de saut quand on relâche la touche
+      if (!controls.jump) {
+        setJustJumped(false);
       }
 
       // Gravité
