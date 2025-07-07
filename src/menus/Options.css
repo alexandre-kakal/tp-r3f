@@ -1,0 +1,353 @@
+/* Menu Options - Style Goofy */
+@import url('https://fonts.googleapis.com/css2?family=Fredoka+One:wght@400&family=Comic+Neue:wght@400;700&display=swap');
+
+.options-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  font-family: 'Comic Neue', cursive;
+  z-index: 1000;
+  color: #fff;
+  overflow: hidden;
+  
+  /* Background psychédélique */
+  background: 
+    conic-gradient(from 0deg at 50% 50%, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #feca57, #ff9ff3, #ff6b6b),
+    radial-gradient(circle at 30% 70%, rgba(255, 107, 107, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 70% 30%, rgba(78, 205, 196, 0.3) 0%, transparent 50%);
+  background-size: 400% 400%, 200% 200%, 200% 200%;
+  animation: psychedelicBackground 15s ease infinite;
+}
+
+@keyframes psychedelicBackground {
+  0% { background-position: 0% 50%, 0% 0%, 100% 100%; }
+  25% { background-position: 100% 50%, 100% 0%, 0% 100%; }
+  50% { background-position: 100% 100%, 100% 100%, 0% 0%; }
+  75% { background-position: 0% 100%, 0% 100%, 100% 0%; }
+  100% { background-position: 0% 50%, 0% 0%, 100% 100%; }
+}
+
+.options-title {
+  font-family: 'Fredoka One', cursive;
+  font-size: 3.5rem;
+  font-weight: 400;
+  margin-bottom: 2rem;
+  text-shadow: 
+    3px 3px 0px #ff6b6b,
+    6px 6px 0px #4ecdc4,
+    9px 9px 15px rgba(0,0,0,0.3);
+  animation: titleWiggle 3s ease-in-out infinite;
+  position: relative;
+}
+
+@keyframes titleWiggle {
+  0%, 100% { transform: rotate(-2deg) scale(1); }
+  25% { transform: rotate(2deg) scale(1.02); }
+  50% { transform: rotate(-1deg) scale(1.01); }
+  75% { transform: rotate(1deg) scale(1.02); }
+}
+
+.options-title::before {
+  content: '⚙️';
+  position: absolute;
+  left: -60px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 3rem;
+  animation: gearSpin 4s linear infinite;
+}
+
+@keyframes gearSpin {
+  from { transform: translateY(-50%) rotate(0deg); }
+  to { transform: translateY(-50%) rotate(360deg); }
+}
+
+.options-section {
+  background: rgba(255, 255, 255, 0.15);
+  padding: 2.5rem;
+  border-radius: 25px;
+  backdrop-filter: blur(15px);
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  min-width: 450px;
+  margin-bottom: 2rem;
+  position: relative;
+  overflow: hidden;
+  animation: sectionFloat 6s ease-in-out infinite;
+}
+
+@keyframes sectionFloat {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33% { transform: translateY(-10px) rotate(1deg); }
+  66% { transform: translateY(-5px) rotate(-1deg); }
+}
+
+.options-section::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+  animation: shimmer 8s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%) translateY(-100%) rotate(0deg); }
+  100% { transform: translateX(100%) translateY(100%) rotate(0deg); }
+}
+
+.section-title {
+  font-family: 'Fredoka One', cursive;
+  font-size: 1.8rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  position: relative;
+  z-index: 2;
+}
+
+.control-row {
+  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+}
+
+.control-label {
+  font-size: 1.3rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.control-label::before {
+  content: attr(data-emoji);
+  display: inline-block;
+  animation: labelDance 2s ease-in-out infinite;
+}
+
+@keyframes labelDance {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50% { transform: scale(1.2) rotate(15deg); }
+}
+
+.key-button {
+  padding: 0.8rem 1.5rem;
+  font-size: 1.1rem;
+  font-family: 'Comic Neue', cursive;
+  font-weight: 700;
+  color: #fff;
+  border: 3px solid #fff;
+  border-radius: 15px;
+  cursor: pointer;
+  min-width: 140px;
+  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  position: relative;
+  overflow: hidden;
+  text-transform: uppercase;
+}
+
+.key-button-normal {
+  background: linear-gradient(45deg, #4CAF50, #45a049);
+  animation: buttonPulse 3s ease-in-out infinite;
+}
+
+.key-button-left {
+  background: linear-gradient(45deg, #2196F3, #1976D2);
+  animation: buttonPulse 3s ease-in-out infinite 0.5s;
+}
+
+.key-button-right {
+  background: linear-gradient(45deg, #2196F3, #1976D2);
+  animation: buttonPulse 3s ease-in-out infinite 1s;
+}
+
+.key-button-recording {
+  background: linear-gradient(45deg, #FF6B6B, #ee5a52);
+  animation: recordingBlink 0.8s ease-in-out infinite;
+}
+
+@keyframes buttonPulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+  50% { transform: scale(1.05); box-shadow: 0 8px 15px rgba(0,0,0,0.4); }
+}
+
+@keyframes recordingBlink {
+  0%, 100% { 
+    background: linear-gradient(45deg, #FF6B6B, #ee5a52);
+    transform: scale(1);
+  }
+  50% { 
+    background: linear-gradient(45deg, #ff9999, #ff7777);
+    transform: scale(1.1);
+  }
+}
+
+.key-button:hover:not(.key-button-recording) {
+  transform: scale(1.1) rotate(3deg);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+}
+
+.volume-container {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  position: relative;
+  z-index: 2;
+}
+
+.volume-slider {
+  flex: 1;
+  height: 12px;
+  background: linear-gradient(90deg, #ff6b6b, #feca57, #4ecdc4);
+  border-radius: 10px;
+  cursor: pointer;
+  appearance: none;
+  outline: none;
+  position: relative;
+}
+
+.volume-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 30px;
+  height: 30px;
+  background: #fff;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+  border: 3px solid #4ecdc4;
+  animation: thumbBounce 2s ease-in-out infinite;
+}
+
+@keyframes thumbBounce {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.volume-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  min-width: 60px;
+  text-align: right;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.recording-instructions {
+  background: rgba(255, 107, 107, 0.9);
+  padding: 1.5rem;
+  border-radius: 15px;
+  margin-bottom: 1rem;
+  text-align: center;
+  animation: instructionsBounce 1s ease-in-out infinite;
+  border: 3px solid #fff;
+}
+
+@keyframes instructionsBounce {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50% { transform: scale(1.02) rotate(1deg); }
+}
+
+.recording-instructions p {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+}
+
+.error-message {
+  background: rgba(255, 69, 69, 0.95);
+  padding: 1.5rem;
+  border-radius: 15px;
+  margin-bottom: 1rem;
+  text-align: center;
+  animation: errorShake 0.6s ease-in-out;
+  border: 3px solid #fff;
+  box-shadow: 0 8px 20px rgba(255, 69, 69, 0.4);
+}
+
+@keyframes errorShake {
+  0%, 100% { transform: translateX(0) scale(1); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px) scale(1.02); }
+  20%, 40%, 60%, 80% { transform: translateX(5px) scale(1.02); }
+}
+
+.error-message p {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+  color: #fff;
+}
+
+.back-button {
+  padding: 1.2rem 2.5rem;
+  font-size: 1.4rem;
+  font-family: 'Comic Neue', cursive;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(45deg, #9C27B0, #7B1FA2);
+  border: 3px solid #fff;
+  border-radius: 25px;
+  cursor: pointer;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  position: relative;
+  overflow: hidden;
+}
+
+.back-button::before {
+  content: '🏠';
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.5rem;
+  animation: homeIcon 3s ease-in-out infinite;
+}
+
+@keyframes homeIcon {
+  0%, 100% { transform: translateY(-50%) scale(1); }
+  50% { transform: translateY(-50%) scale(1.2); }
+}
+
+.back-button:hover {
+  transform: scale(1.1) translateY(-5px) rotate(-2deg);
+  box-shadow: 0 12px 20px rgba(156, 39, 176, 0.4);
+}
+
+/* Effets responsifs */
+@media (max-width: 768px) {
+  .options-section {
+    min-width: 350px;
+    padding: 2rem;
+  }
+  
+  .options-title {
+    font-size: 2.8rem;
+  }
+  
+  .section-title {
+    font-size: 1.5rem;
+  }
+  
+  .control-label {
+    font-size: 1.1rem;
+  }
+  
+  .key-button {
+    padding: 0.6rem 1.2rem;
+    font-size: 1rem;
+    min-width: 120px;
+  }
+} 
