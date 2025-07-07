@@ -21,6 +21,7 @@ const defaultSettings: GameSettings = {
   rightKey: 'KeyD',
   volume: 50
 };
+import { Rick } from "./components/Rick";
 
 function App() {
   const [gameState, setGameState] = useState<GameState>('menu');
@@ -143,6 +144,15 @@ function App() {
       {gameState === 'options' && (
         <Options onBack={handleBackToMenu} />
       )}
+
+
+    <Canvas camera={{ position: [10, 7, 18], fov: 50 }} shadows>
+      <ambientLight intensity={0.5} />
+      <directionalLight position={[10, 10, 5]} intensity={1} castShadow />
+      <Map />
+      <Rick />
+      <OrbitControls />
+    </Canvas>
     </>
   );
 }
