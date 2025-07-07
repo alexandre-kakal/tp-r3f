@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { RigidBody } from "@react-three/rapier";
 
 // Paramètres de la map
 const MAP_LENGTH = 120; // nombre de cases
@@ -57,15 +58,21 @@ function Platform({ x, y, type }: { x: number; y: number; type: string }) {
   return (
     <>
       {/* Plateforme */}
-      <mesh position={[x, y, 0]}>
-        <boxGeometry args={[PLATFORM_WIDTH, PLATFORM_HEIGHT, PLATFORM_DEPTH]} />
-        <meshStandardMaterial color={color} />
-      </mesh>
+      <RigidBody type="fixed" colliders="cuboid">
+        <mesh position={[x, y, 0]}>
+          <boxGeometry
+            args={[PLATFORM_WIDTH, PLATFORM_HEIGHT, PLATFORM_DEPTH]}
+          />
+          <meshStandardMaterial color={color} />
+        </mesh>
+      </RigidBody>
       {/* Colonne de soutien (mêmes dimensions que la plateforme, bien alignée) */}
-      <mesh position={[x, colonneY, 0]}>
-        <boxGeometry args={[PLATFORM_WIDTH, colonneHeight, PLATFORM_DEPTH]} />
-        <meshStandardMaterial color={"#888"} />
-      </mesh>
+      <RigidBody type="fixed" colliders="cuboid">
+        <mesh position={[x, colonneY, 0]}>
+          <boxGeometry args={[PLATFORM_WIDTH, colonneHeight, PLATFORM_DEPTH]} />
+          <meshStandardMaterial color={"#888"} />
+        </mesh>
+      </RigidBody>
     </>
   );
 }
@@ -73,12 +80,14 @@ function Platform({ x, y, type }: { x: number; y: number; type: string }) {
 function Ground() {
   // Sol de référence (plan fin)
   return (
-    <mesh position={[60, GROUND_Y - 0.26, 0]} receiveShadow>
-      <boxGeometry
-        args={[MAP_LENGTH * (PLATFORM_WIDTH + 1), 0.5, PLATFORM_DEPTH * 2]}
-      />
-      <meshStandardMaterial color="#444" />
-    </mesh>
+    <RigidBody type="fixed" colliders="cuboid">
+      <mesh position={[60, GROUND_Y - 0.26, 0]} receiveShadow>
+        <boxGeometry
+          args={[MAP_LENGTH * (PLATFORM_WIDTH + 1), 0.5, PLATFORM_DEPTH * 2]}
+        />
+        <meshStandardMaterial color="#444" />
+      </mesh>
+    </RigidBody>
   );
 }
 

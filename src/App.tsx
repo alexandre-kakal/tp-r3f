@@ -7,6 +7,8 @@ import Map from "./components/Map";
 import { Rick, type RickRef } from "./components/Rick";
 import Menu from "./menus/Menu";
 import Options from "./menus/Options";
+import { Rick } from "./components/Rick";
+import { Physics } from "@react-three/rapier";
 
 type GameState = "menu" | "playing" | "options";
 
@@ -112,7 +114,6 @@ function App() {
             <CameraController target={cameraTarget} />
             {/* OrbitControls désactivé pour laisser le contrôle à CameraController */}
             {/* <OrbitControls enableZoom={false} enableRotate={false} /> */}
-          </Canvas>
 
           {/* Bouton pause/menu en jeu */}
           <button
