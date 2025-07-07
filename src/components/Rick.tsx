@@ -119,4 +119,4 @@ export function Rick(props: JSX.IntrinsicElements["group"]) {
   );
 }
 
-useGLTF.preload("/rick.glb");
+useGLTF.preload("/models/rick.glb");
