@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useAudio } from '../hooks/useAudio';
 import './Options.css';
 
 interface OptionsProps {
@@ -13,16 +14,25 @@ interface GameSettings {
 }
 
 const defaultSettings: GameSettings = {
-  jumpKey: 'KeyZ',
-  leftKey: 'KeyQ',
-  rightKey: 'KeyD',
-  volume: 50
+  jumpKey: "KeyZ",
+  leftKey: "KeyQ",
+  rightKey: "KeyD",
+  volume: 50,
 };
 
 function Options({ onBack }: OptionsProps) {
   const [settings, setSettings] = useState<GameSettings>(defaultSettings);
   const [isRecording, setIsRecording] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { 
+    updateVolume, 
+    playJumpSound, 
+    testBackgroundMusic, 
+    enableAudio, 
+    isAudioEnabled, 
+    audioError,
+    isMusicPlaying
+  } = useAudio();
 
   // Charger les paramètres depuis localStorage
   useEffect(() => {
@@ -36,6 +46,9 @@ function Options({ onBack }: OptionsProps) {
   const saveSettings = (newSettings: GameSettings) => {
     setSettings(newSettings);
     localStorage.setItem('rockEtMirtySettings', JSON.stringify(newSettings));
+    
+    // Mettre à jour le volume audio en temps réel
+    updateVolume(newSettings.volume);
   };
 
   // Vérifier si une touche est déjà utilisée
@@ -85,11 +98,16 @@ function Options({ onBack }: OptionsProps) {
       saveSettings(newSettings);
       setIsRecording(null);
       setErrorMessage(null);
+
+      // Test du son de saut si on configure la touche de saut
+      if (isRecording === 'jumpKey') {
+        playJumpSound();
+      }
     };
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [isRecording, settings]);
+  }, [isRecording, settings, playJumpSound]);
 
   // Formater le nom de la touche pour l'affichage
   const formatKeyName = (keyCode: string) => {
@@ -115,6 +133,27 @@ function Options({ onBack }: OptionsProps) {
     if (isRecording === keyType) return `${baseClass} key-button-recording`;
     if (keyType === 'jumpKey') return `${baseClass} key-button-normal`;
     return `${baseClass} key-button-${keyType === 'leftKey' ? 'left' : 'right'}`;
+  };
+
+  // Gérer le changement de volume avec preview
+  const handleVolumeChange = (newVolume: number) => {
+    const newSettings = { ...settings, volume: newVolume };
+    saveSettings(newSettings);
+  };
+
+  // Tester l'audio
+  const handleTestJump = async () => {
+    if (!isAudioEnabled) {
+      await enableAudio();
+    }
+    playJumpSound();
+  };
+
+  const handleTestMusic = async () => {
+    if (!isAudioEnabled) {
+      await enableAudio();
+    }
+    testBackgroundMusic();
   };
 
   return (
@@ -167,7 +206,7 @@ function Options({ onBack }: OptionsProps) {
       {/* Configuration du volume */}
       <div className="options-section">
         <h2 className="section-title">
-          🔊 Volume du jeu
+          🔊 Volume et Audio
         </h2>
 
         <div className="volume-container">
@@ -177,13 +216,122 @@ function Options({ onBack }: OptionsProps) {
             min="0"
             max="100"
             value={settings.volume}
-            onChange={(e) => saveSettings({ ...settings, volume: parseInt(e.target.value) })}
+            onChange={(e) => handleVolumeChange(parseInt(e.target.value))}
             className="volume-slider"
           />
           <span className="volume-value">
             {settings.volume}% 🔊
           </span>
         </div>
+
+        {/* Statut audio */}
+        <div style={{ 
+          textAlign: 'center', 
+          marginTop: '1rem', 
+          fontSize: '0.9rem',
+          opacity: 0.8 
+        }}>
+          {settings.volume === 0 && "🔇 Audio désactivé"}
+          {settings.volume > 0 && settings.volume <= 25 && "🔉 Volume faible"}
+          {settings.volume > 25 && settings.volume <= 75 && "🔊 Volume modéré"}
+          {settings.volume > 75 && "📢 Volume élevé"}
+        </div>
+
+        {/* Diagnostic audio */}
+        <div style={{
+          background: 'rgba(255,255,255,0.1)',
+          padding: '1rem',
+          borderRadius: '10px',
+          marginTop: '1rem',
+          fontSize: '0.9rem'
+        }}>
+          <p style={{ margin: '0.5rem 0' }}>
+            📊 Audio activé: {isAudioEnabled ? '✅ Oui' : '❌ Non'}
+          </p>
+          <p style={{ margin: '0.5rem 0' }}>
+            🎵 Musique: {isMusicPlaying ? '🔊 En cours' : '🔇 Arrêtée'}
+          </p>
+          {audioError && (
+            <p style={{ margin: '0.5rem 0', color: '#ff6b6b' }}>
+              ⚠️ Erreur: {audioError}
+            </p>
+          )}
+        </div>
+
+        {/* Boutons de test */}
+        <div style={{
+          display: 'flex',
+          gap: '1rem',
+          marginTop: '1rem',
+          justifyContent: 'center'
+        }}>
+          <button
+            onClick={handleTestJump}
+            style={{
+              padding: '0.8rem 1.5rem',
+              fontSize: '1rem',
+              fontWeight: '700',
+              color: '#fff',
+              background: 'linear-gradient(45deg, #4CAF50, #45a049)',
+              border: '2px solid #fff',
+              borderRadius: '10px',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease'
+            }}
+          >
+            🎵 Test Son Saut
+          </button>
+
+          <button
+            onClick={handleTestMusic}
+            style={{
+              padding: '0.8rem 1.5rem',
+              fontSize: '1rem',
+              fontWeight: '700',
+              color: '#fff',
+              background: 'linear-gradient(45deg, #2196F3, #1976D2)',
+              border: '2px solid #fff',
+              borderRadius: '10px',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease'
+            }}
+          >
+            🎶 Test Musique (3s)
+          </button>
+        </div>
+
+        {!isAudioEnabled && (
+          <div style={{
+            marginTop: '1rem',
+            padding: '1rem',
+            background: 'rgba(255, 165, 0, 0.2)',
+            borderRadius: '10px',
+            border: '2px solid #FFA500',
+            textAlign: 'center'
+          }}>
+            <p style={{ margin: '0 0 0.5rem 0', fontWeight: '700' }}>
+              ⚠️ Audio non activé
+            </p>
+            <p style={{ margin: '0 0 1rem 0', fontSize: '0.9rem' }}>
+              Cliquez sur un bouton de test pour activer l'audio
+            </p>
+            <button
+              onClick={enableAudio}
+              style={{
+                padding: '0.5rem 1rem',
+                fontSize: '1rem',
+                fontWeight: '700',
+                color: '#fff',
+                background: '#FFA500',
+                border: 'none',
+                borderRadius: '5px',
+                cursor: 'pointer'
+              }}
+            >
+              🔓 Activer l'Audio
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Message d'erreur */}

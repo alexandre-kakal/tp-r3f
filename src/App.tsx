@@ -1,14 +1,15 @@
 // import { OrbitControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
+import { Physics } from "@react-three/rapier";
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import "./App.css";
 import { CameraController } from "./components/CameraController";
 import Map from "./components/Map";
 import { Rick, type RickRef } from "./components/Rick";
+import { useAudio } from "./hooks/useAudio";
 import Menu from "./menus/Menu";
 import Options from "./menus/Options";
-import { Physics } from "@react-three/rapier";
 
 type GameState = "menu" | "playing" | "options";
 
@@ -31,6 +32,15 @@ function App() {
   const [settings, setSettings] = useState<GameSettings>(defaultSettings);
   const rickRef = useRef<RickRef>(null);
   const [cameraTarget, setCameraTarget] = useState(new THREE.Vector3(0, 0, 0));
+  const { 
+    playBackgroundMusic, 
+    stopBackgroundMusic, 
+    updateVolume, 
+    isMusicPlaying, 
+    isAudioEnabled, 
+    audioError,
+    enableAudio
+  } = useAudio();
 
   // Charger les paramètres depuis localStorage
   useEffect(() => {
@@ -46,9 +56,33 @@ function App() {
       const savedSettings = localStorage.getItem("rockEtMirtySettings");
       if (savedSettings) {
         setSettings(JSON.parse(savedSettings));
+        updateVolume(JSON.parse(savedSettings).volume);
       }
     }
-  }, [gameState]);
+  }, [gameState, updateVolume]);
+
+  // Gestion de la musique de fond selon l'état du jeu
+  useEffect(() => {
+    const startMusic = async () => {
+      if (gameState === "playing") {
+        // Activer l'audio si nécessaire puis lancer la musique
+        if (!isAudioEnabled) {
+          try {
+            await enableAudio();
+          } catch (error) {
+            console.error("Erreur activation audio:", error);
+          }
+        }
+        // Lancer la musique de fond
+        await playBackgroundMusic();
+      } else {
+        // Arrêter la musique quand on sort du jeu
+        stopBackgroundMusic();
+      }
+    };
+
+    startMusic();
+  }, [gameState, playBackgroundMusic, stopBackgroundMusic, enableAudio, isAudioEnabled]);
 
   // Mettre à jour la position de la caméra en temps réel
   useEffect(() => {
@@ -60,7 +94,7 @@ function App() {
         }
         requestAnimationFrame(updateCameraTarget);
       };
-
+      
       updateCameraTarget();
     }
   }, [gameState]);
@@ -83,8 +117,17 @@ function App() {
     return keyMap[keyCode] || keyCode.replace("Key", "");
   };
 
-  const handlePlay = () => {
+  const handlePlay = async () => {
     setGameState("playing");
+    // Activer l'audio immédiatement au clic pour débloquer les navigateurs
+    if (!isAudioEnabled) {
+      try {
+        await enableAudio();
+        console.log("Audio activé au clic JOUER");
+      } catch (error) {
+        console.error("Erreur activation audio:", error);
+      }
+    }
   };
 
   const handleOptions = () => {
@@ -171,7 +214,7 @@ function App() {
             <p style={{ margin: "0" }}>• Plateformes orange : Super saut !</p>
           </div>
 
-          {/* Indicateur de position pour debug (optionnel) */}
+          {/* Indicateur audio et position pour debug */}
           <div
             style={{
               position: "absolute",
@@ -185,9 +228,58 @@ function App() {
               zIndex: 100,
             }}
           >
-            Rick: ({cameraTarget.x.toFixed(1)}, {cameraTarget.y.toFixed(1)},{" "}
-            {cameraTarget.z.toFixed(1)})
+            <p style={{ margin: "0" }}>
+              🎵 Musique: {isMusicPlaying ? "🔊" : "🔇"} | 
+              Audio: {isAudioEnabled ? "✅" : "❌"} | 
+              Vol: {settings.volume}%
+            </p>
+            {audioError && (
+              <p style={{ margin: "0", color: "#ff6b6b", fontSize: "0.7rem" }}>
+                ⚠️ {audioError}
+              </p>
+            )}
+            <p style={{ margin: "0" }}>
+              Rick: ({cameraTarget.x.toFixed(1)}, {cameraTarget.y.toFixed(1)},{" "}
+              {cameraTarget.z.toFixed(1)})
+            </p>
           </div>
+
+          {/* Notification audio si pas activé */}
+          {!isAudioEnabled && (
+            <div
+              style={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                background: "rgba(255, 165, 0, 0.9)",
+                color: "#000",
+                padding: "1rem 2rem",
+                borderRadius: "10px",
+                border: "3px solid #FFA500",
+                textAlign: "center",
+                zIndex: 200,
+                fontWeight: "bold"
+              }}
+            >
+              <p style={{ margin: "0 0 1rem 0" }}>🔊 Audio non activé</p>
+              <button
+                onClick={enableAudio}
+                style={{
+                  padding: "0.5rem 1rem",
+                  fontSize: "1rem",
+                  fontWeight: "bold",
+                  background: "#000",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "5px",
+                  cursor: "pointer"
+                }}
+              >
+                🎵 Activer l'Audio
+              </button>
+            </div>
+          )}
         </>
       )}
 
